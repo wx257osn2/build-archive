@@ -1,0 +1,56 @@
+name: gcc
+
+on:
+  push:
+    tags: [ "gcc-[1-9]*.[0-9]+.[0-9]+" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-24.04
+            arch: x86_64
+          - image: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.image }}
+    steps:
+    - name: build
+      shell: bash
+      run: |
+        tag="${{ github.ref_name }}"
+        version="${tag#gcc-}"
+        suffix="-${version%%.*}"
+        prefix="/opt/${tag}"
+        sudo apt-get install -y libgmp-dev libmpc-dev libmpfr-dev
+        curl -sSL https://gcc.gnu.org/pub/gcc/releases/${tag}/${tag}.tar.gz -o ${tag}.tar.gz
+        tar xaf ${tag}.tar.gz
+        rm ${tag}.tar.gz
+        mkdir -p build
+        pushd build
+        ../${tag}/configure --prefix=/opt/${tag} --enable-languages=c,c++ --disable-multilib --without-ppl --without-cloog-ppl --enable-checking=release --disable-nls --enable-lto --program-suffix=${suffix} LDFLAGS="-Wl,-rpath,${prefix}/lib,-rpath,${prefix}/lib64,-rpath,${prefix}/lib32"
+        make -j $(nproc)
+        sudo make install
+        popd
+        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="pzstd" ${tag}
+    - uses: actions/upload-artifact@v4
+      with:
+        name: archive-${{ matrix.arch }}
+        path: ./ubuntu2404-${{ matrix.arch }}.tar.zst
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-x86_64
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-aarch64
+    - uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ubuntu2404-x86_64.tar.zst
+          ubuntu2404-aarch64.tar.zst
