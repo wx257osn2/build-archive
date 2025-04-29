@@ -32,7 +32,7 @@ jobs:
         make -j $(nproc)
         sudo make install
         popd
-        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="pzstd" ${tag}
+        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" ${tag}
     - uses: actions/upload-artifact@v4
       with:
         name: archive-${{ matrix.arch }}
