@@ -15,6 +15,10 @@ jobs:
             arch: aarch64
     runs-on: ${{ matrix.image }}
     steps:
+    - name: stop update man-page
+      run: |
+        echo "set man-db/auto-update false" | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
     - name: build
       shell: bash
       run: |
