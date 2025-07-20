@@ -1,0 +1,60 @@
+name: boost
+
+on:
+  push:
+    tags: [ "boost-[1-9]*.[0-9]+.[0-9]+-[a-z]+-[1-9]*.[0-9]+.[0-9]+" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-24.04
+            arch: x86_64
+          - image: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.image }}
+    steps:
+    - name: stop update man-page
+      run: |
+        echo "set man-db/auto-update false" | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
+    - name: build
+      shell: bash
+      run: |
+        tag="${{ github.ref_name }}"
+        suffix="${tag#boost-}"
+        version="${suffix%%-*}"
+        compiler_with_version="${suffix#${version}-}"
+        compiler="${compiler_with_version%%-*}"
+        compiler_version="${compiler_with_version#*-}"
+        prefix="/opt/boost/${version}/${compiler_with_version}"
+        curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/wx257osn2/build-archive/refs/tags/${tag}/${compiler}.bash | sudo bash -s ${compiler_version}
+        curl -L https://github.com/boostorg/boost/releases/download/boost-${version}/boost-${version}-b2-nodocs.tar.xz | tar xJ
+        cd boost-${version}
+        ./bootstrap.sh
+        ./b2 --without-python --without-mpi --without-graph_parallel --prefix=${prefix} -j$(($(nproc) / 2 + 1)) toolset=${compiler} link=static,shared variant=release install
+        cd ..
+        rm -rf boost-${version}
+        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" boost
+    - uses: actions/upload-artifact@v4
+      with:
+        name: archive-${{ matrix.arch }}
+        path: ./ubuntu2404-${{ matrix.arch }}.tar.zst
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-x86_64
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-aarch64
+    - uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ubuntu2404-x86_64.tar.zst
+          ubuntu2404-aarch64.tar.zst
