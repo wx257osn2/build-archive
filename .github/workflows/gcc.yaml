@@ -32,7 +32,7 @@ jobs:
         rm ${tag}.tar.gz
         mkdir -p build
         pushd build
-        ../${tag}/configure --prefix=/opt/${tag} --enable-languages=c,c++ --disable-multilib --without-ppl --without-cloog-ppl --enable-checking=release --disable-nls --enable-lto --program-suffix=${suffix} LDFLAGS="-Wl,-rpath,${prefix}/lib,-rpath,${prefix}/lib64,-rpath,${prefix}/lib32"
+        ../${tag}/configure --prefix=${prefix} --enable-languages=c,c++ --disable-multilib --without-ppl --without-cloog-ppl --enable-checking=release --disable-nls --enable-lto --program-suffix=${suffix} LDFLAGS="-Wl,-rpath,${prefix}/lib,-rpath,${prefix}/lib64,-rpath,${prefix}/lib32"
         make -j $(nproc)
         sudo make install
         popd
