@@ -1,0 +1,57 @@
+name: infer
+
+on:
+  push:
+    tags: [ "infer-[1-9]*.[0-9]+.[0-9]+" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-24.04
+            arch: x86_64
+          - image: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.image }}
+    steps:
+    - name: stop update man-page
+      run: |
+        echo "set man-db/auto-update false" | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
+    - name: build
+      shell: bash
+      run: |
+        tag="${{ github.ref_name }}"
+        version="${tag#infer-}"
+        prefix="/opt/${tag}"
+        sudo apt install -y --no-install-recommends opam
+        git clone https://github.com/facebook/infer
+        pushd infer
+        git checkout v${version}
+        ./build-infer.sh clang -y -- --prefix=${prefix} --disable-java-analyzers
+        make -j $(nproc)
+        sudo make install
+        popd
+        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" ${tag}
+    - uses: actions/upload-artifact@v4
+      with:
+        name: archive-${{ matrix.arch }}
+        path: ./ubuntu2404-${{ matrix.arch }}.tar.zst
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-x86_64
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-aarch64
+    - uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ubuntu2404-x86_64.tar.zst
+          ubuntu2404-aarch64.tar.zst
