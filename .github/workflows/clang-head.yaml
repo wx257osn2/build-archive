@@ -1,0 +1,65 @@
+name: clang-head
+
+on:
+  push:
+    tags: [ "clang-head-*" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-24.04
+            arch: x86_64
+          - image: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.image }}
+    steps:
+    - name: stop update man-page
+      run: |
+        echo "set man-db/auto-update false" | sudo debconf-communicate
+        sudo dpkg-reconfigure man-db
+    - name: build
+      shell: bash
+      run: |
+        tag="${{ github.ref_name }}"
+        version="${tag#clang-head-}"
+        prefix="/opt/clang-${version}"
+        mkdir llvm-project
+        pushd llvm-project
+        git init
+        git remote add origin https://github.com/llvm/llvm-project
+        git fetch --depth 2000 origin main
+        git checkout ${version}
+        git reset --hard FETCH_HEAD
+        popd
+        mkdir -p build
+        pushd build
+        export CC=clang
+        export CXX=clang++
+        cmake -GNinja -DCMAKE_INSTALL_PREFIX=${prefix} -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;libunwind" -DCLANG_EXECUTABLE_VERSION=head ../llvm-project/llvm
+        ninja
+        sudo cmake --install .
+        popd
+        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" clang-${version}
+    - uses: actions/upload-artifact@v4
+      with:
+        name: archive-${{ matrix.arch }}
+        path: ./ubuntu2404-${{ matrix.arch }}.tar.zst
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-x86_64
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-aarch64
+    - uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          ubuntu2404-x86_64.tar.zst
+          ubuntu2404-aarch64.tar.zst
