@@ -11,8 +11,16 @@ jobs:
         include:
           - image: ubuntu-24.04
             arch: x86_64
+            ubuntu: ubuntu2404
           - image: ubuntu-24.04-arm
             arch: aarch64
+            ubuntu: ubuntu2404
+          - image: ubuntu-26.04
+            arch: x86_64
+            ubuntu: ubuntu2604
+          - image: ubuntu-26.04-arm
+            arch: aarch64
+            ubuntu: ubuntu2604
     runs-on: ${{ matrix.image }}
     steps:
     - name: stop update man-page
@@ -36,25 +44,33 @@ jobs:
         make -j $(nproc)
         sudo make install
         popd
-        tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" ${tag}
+        tar -C /opt -cf ./${{ matrix.ubuntu }}-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" ${tag}
     - uses: actions/upload-artifact@v4
       with:
-        name: archive-${{ matrix.arch }}
-        path: ./ubuntu2404-${{ matrix.arch }}.tar.zst
+        name: archive-${{ matrix.ubuntu }}-${{ matrix.arch }}
+        path: ./${{ matrix.ubuntu }}-${{ matrix.arch }}.tar.zst
   deploy:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: build
     permissions:
       contents: write
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: archive-x86_64
+        name: archive-ubuntu2404-x86_64
     - uses: actions/download-artifact@v4
       with:
-        name: archive-aarch64
+        name: archive-ubuntu2404-aarch64
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-ubuntu2604-x86_64
+    - uses: actions/download-artifact@v4
+      with:
+        name: archive-ubuntu2604-aarch64
     - uses: softprops/action-gh-release@v2
       with:
         files: |
           ubuntu2404-x86_64.tar.zst
           ubuntu2404-aarch64.tar.zst
+          ubuntu2604-x86_64.tar.zst
+          ubuntu2604-aarch64.tar.zst
