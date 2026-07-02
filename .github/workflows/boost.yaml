@@ -25,17 +25,21 @@ jobs:
         tag="${{ github.ref_name }}"
         suffix="${tag#boost-}"
         version="${suffix%%-*}"
+        download_version=$version
+        if [ "$download_version" == "1.91.0" ]; then
+          download_version="1.91.0-1"
+        fi
         compiler_with_version="${suffix#${version}-}"
         compiler="${compiler_with_version%%-*}"
         compiler_version="${compiler_with_version#*-}"
         prefix="/opt/boost/${version}/${compiler_with_version}"
         curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/wx257osn2/build-archive/refs/tags/${tag}/${compiler}.bash | sudo bash -s ${compiler_version}
-        curl -L https://github.com/boostorg/boost/releases/download/boost-${version}/boost-${version}-b2-nodocs.tar.xz | tar xJ
-        cd boost-${version}
+        curl -L https://github.com/boostorg/boost/releases/download/boost-${download_version}/boost-${download_version}-b2-nodocs.tar.xz | tar xJ
+        cd boost-${download_version}
         ./bootstrap.sh
         ./b2 --without-python --without-mpi --without-graph_parallel --prefix=${prefix} -j$(nproc) toolset=${compiler} link=static,shared variant=release install
         cd ..
-        rm -rf boost-${version}
+        rm -rf boost-${download_version}
         tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" boost
     - uses: actions/upload-artifact@v4
       with:
@@ -61,16 +65,20 @@ jobs:
         tag="${{ github.ref_name }}"
         suffix="${tag#boost-}"
         version="${suffix%%-*}"
+        download_version=$version
+        if [ "$download_version" == "1.91.0" ]; then
+          download_version="1.91.0-1"
+        fi
         compiler_with_version="${suffix#${version}-}"
         compiler="${compiler_with_version%%-*}"
         compiler_version="${compiler_with_version#*-}"
         prefix="/opt/boost/${version}/${compiler_with_version}"
-        curl -L https://github.com/boostorg/boost/releases/download/boost-${version}/boost-${version}-b2-nodocs.tar.xz | tar xJ
-        cd boost-${version}
+        curl -L https://github.com/boostorg/boost/releases/download/boost-${download_version}/boost-${download_version}-b2-nodocs.tar.xz | tar xJ
+        cd boost-${download_version}
         ./bootstrap.sh
         ./b2 --without-python --without-mpi --without-graph_parallel --prefix=${prefix} -j$(nproc) toolset=${compiler} link=static,shared variant=release install
         cd ..
-        rm -rf boost-${version}
+        rm -rf boost-${download_version}
         tar -C /opt -cf ./ubuntu2604-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" boost
     - uses: actions/upload-artifact@v4
       with:
