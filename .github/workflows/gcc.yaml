@@ -50,7 +50,7 @@ jobs:
         name: archive-${{ matrix.ubuntu }}-${{ matrix.arch }}
         path: ./${{ matrix.ubuntu }}-${{ matrix.arch }}.tar.zst
   deploy:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-slim
     needs: build
     permissions:
       contents: write

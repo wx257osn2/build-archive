@@ -85,7 +85,7 @@ jobs:
         name: archive-ubuntu2604-${{ matrix.arch }}
         path: ./ubuntu2604-${{ matrix.arch }}.tar.zst
   deploy:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-slim
     needs: [build2404, build2604]
     permissions:
       contents: write
