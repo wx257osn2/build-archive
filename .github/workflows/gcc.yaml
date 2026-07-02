@@ -55,18 +55,19 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: archive-ubuntu2404-x86_64
-    - uses: actions/download-artifact@v4
-      with:
-        name: archive-ubuntu2404-aarch64
-    - uses: actions/download-artifact@v4
-      with:
-        name: archive-ubuntu2604-x86_64
-    - uses: actions/download-artifact@v4
-      with:
-        name: archive-ubuntu2604-aarch64
+    - parallel:
+      - uses: actions/download-artifact@v4
+        with:
+          name: archive-ubuntu2404-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: archive-ubuntu2404-aarch64
+      - uses: actions/download-artifact@v4
+        with:
+          name: archive-ubuntu2604-x86_64
+      - uses: actions/download-artifact@v4
+        with:
+          name: archive-ubuntu2604-aarch64
     - uses: softprops/action-gh-release@v2
       with:
         files: |
