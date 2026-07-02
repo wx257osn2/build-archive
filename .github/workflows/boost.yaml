@@ -41,7 +41,7 @@ jobs:
         cd ..
         rm -rf boost-${download_version}
         tar -C /opt -cf ./ubuntu2404-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" boost
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: archive-ubuntu2404-${{ matrix.arch }}
         path: ./ubuntu2404-${{ matrix.arch }}.tar.zst
@@ -80,7 +80,7 @@ jobs:
         cd ..
         rm -rf boost-${download_version}
         tar -C /opt -cf ./ubuntu2604-${{ matrix.arch }}.tar.zst --use-compress-program="zstdmt -18" boost
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: archive-ubuntu2604-${{ matrix.arch }}
         path: ./ubuntu2604-${{ matrix.arch }}.tar.zst
@@ -91,19 +91,19 @@ jobs:
       contents: write
     steps:
     - parallel:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: archive-ubuntu2404-x86_64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: archive-ubuntu2404-aarch64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: archive-ubuntu2604-x86_64
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: archive-ubuntu2604-aarch64
-    - uses: softprops/action-gh-release@v2
+    - uses: softprops/action-gh-release@v3
       with:
         files: |
           ubuntu2404-x86_64.tar.zst
